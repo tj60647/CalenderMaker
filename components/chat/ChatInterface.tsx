@@ -15,13 +15,15 @@
 
 'use client';
 
-import { useState } from 'react';
-import { Box, Paper, TextField, Button, Typography, Avatar, CircularProgress } from '@mui/material';
-import { Send } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import { Box, Paper, TextField, Button, Typography, Avatar, CircularProgress, IconButton, Dialog, DialogTitle, DialogContent, Collapse } from '@mui/material';
+import { Send, Settings, ChevronDown, ChevronRight, X, Activity } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { parseAIResponse, isValidAction } from '@/lib/ai-actions';
 import { notesRepo } from '@/lib/repositories';
+import { AGENT_CONFIG } from '@/lib/agent-config';
 
 /**
  * Represents a single message in the chat
@@ -59,6 +61,16 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+  const [showModelCard, setShowModelCard] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Scroll to bottom of chat
+   */
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   /**
    * Send message to AI
@@ -88,6 +100,28 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
     setIsLoading(true);
 
     try {
+      // Get current client time with timezone
+      const clientTime = new Date().toLocaleString([], { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric', 
+        hour: 'numeric', 
+        minute: '2-digit',
+        timeZoneName: 'short' 
+      });
+
+      // Best Practice: Send a "sliding window" of recent context (last 20 messages)
+      // This preserves context for follow-up questions ("move that meeting") 
+      // while preventing token limits and reducing cost.
+      const HISTORY_LIMIT = 20;
+      const conversationHistory = [...messages, { role: 'user', content: userMessage }]
+        .slice(-HISTORY_LIMIT)
+        .map(m => ({ 
+          role: m.role, 
+          content: m.content 
+        }));
+
       // Call OpenRouter API via our backend
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -95,11 +129,9 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [...messages, { role: 'user', content: userMessage }].map(m => ({ 
-            role: m.role, 
-            content: m.content 
-          })),
+          messages: conversationHistory,
           userId,
+          clientTime,
         }),
       });
 
@@ -161,8 +193,10 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
             await notesRepo.create({
               date: action.date,
               notes: action.notes,
+              summary: action.summary,
               category: action.category,
-              color: action.color,
+              // Default to blue if no color provided
+              color: action.color || '#3b82f6',
               time: action.time,
               duration: action.duration,
             }, userId);
@@ -171,6 +205,7 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
             const updates: Record<string, unknown> = {};
             if (action.date) updates.date = action.date;
             if (action.notes) updates.notes = action.notes;
+            if (action.summary) updates.summary = action.summary;
             if (action.category) updates.category = action.category;
             if (action.color) updates.color = action.color;
             if (action.time) updates.time = action.time;
@@ -238,13 +273,115 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
           borderColor: 'divider',
           bgcolor: 'primary.main',
           color: 'primary.contrastText',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}
       >
-        <Typography variant="h6">AI Calendar Assistant</Typography>
-        <Typography variant="caption">
-          Ask me to add notes, check your schedule, or answer questions
-        </Typography>
+        <Box>
+          <Typography variant="h6">AI Calendar Assistant</Typography>
+          <Typography variant="caption" sx={{ display: 'block', opacity: 0.9 }}>
+            Ask me to add notes, check your schedule, or answer questions
+          </Typography>
+        </Box>
+        <IconButton size="small" onClick={() => setShowConfig(true)} sx={{ color: 'inherit' }}>
+          <Settings size={20} />
+        </IconButton>
       </Box>
+
+      {/* Helper Dialog for Agent Info */}
+      <Dialog open={showConfig} onClose={() => setShowConfig(false)} fullWidth maxWidth="md">
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 2 }}>
+          Agent Configuration
+          <IconButton onClick={() => setShowConfig(false)} size="small" aria-label="close">
+            <X size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="subtitle2">Agent Name</Typography>
+            <Button 
+              component={Link} 
+              href="/evals" 
+              target="_blank"
+              size="small"
+              startIcon={<Activity size={16} />}
+              sx={{ textTransform: 'none', color: 'text.secondary' }}
+            >
+              View Eval Suite
+            </Button>
+          </Box>
+          <Typography variant="body2" paragraph sx={{ fontFamily: 'monospace', bgcolor: 'grey.100', p: 1, borderRadius: 1 }}>
+            {AGENT_CONFIG.name}
+          </Typography>
+
+          <Typography variant="subtitle2" gutterBottom>Active Model</Typography>
+          <Typography variant="body2" paragraph sx={{ fontFamily: 'monospace', bgcolor: 'grey.100', p: 1, borderRadius: 1 }}>
+            {AGENT_CONFIG.model}
+          </Typography>
+
+          {AGENT_CONFIG.modelCard && (
+            <Box sx={{ mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+              <Box 
+                onClick={() => setShowModelCard(!showModelCard)}
+                sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'background.paper', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'grey.50' }
+                }}
+              >
+                <Typography variant="subtitle2" color="primary">Model Card</Typography>
+                {showModelCard ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+              </Box>
+              
+              <Collapse in={showModelCard}>
+                <Box sx={{ p: 2, pt: 0, bgcolor: 'background.paper' }}>
+                  <Typography variant="body2" paragraph sx={{ fontSize: '0.875rem' }}>
+                    {AGENT_CONFIG.modelCard.description}
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 2 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" display="block">Context Window</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                        {AGENT_CONFIG.modelCard.contextWindow.toLocaleString()} tokens
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" display="block">Provider</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                        {AGENT_CONFIG.modelCard.provider}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" display="block">Input Cost</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                        {AGENT_CONFIG.modelCard.pricing.input}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" display="block">Output Cost</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                        {AGENT_CONFIG.modelCard.pricing.output}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Collapse>
+            </Box>
+          )}
+
+          <Typography variant="subtitle2" gutterBottom>System Instructions</Typography>
+          <Box sx={{ bgcolor: 'grey.900', color: 'common.white', p: 2, borderRadius: 1, maxHeight: 400, overflow: 'auto' }}>
+            <Typography variant="caption" component="pre" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+              {AGENT_CONFIG.baseSystemPrompt}
+            </Typography>
+          </Box>
+        </DialogContent>
+      </Dialog>
 
       {/* Message list */}
       <Box
@@ -347,6 +484,9 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
             </Box>
           </Box>
         )}
+        
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} />
       </Box>
 
       {/* Input area */}

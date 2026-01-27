@@ -27,6 +27,9 @@ export interface CalendarNote {
   
   /** Note content/description */
   notes: string;
+
+  /** Short summary/title for calendar view (optional) */
+  summary?: string;
   
   /** Optional custom color (hex format: "#ff0000") */
   color?: string;

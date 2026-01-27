@@ -12,7 +12,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Card, CardContent, Typography, Chip, Button, Collapse, Grid } from '@mui/material';
+import { 
+  Box, Card, CardContent, Typography, Chip, Button, Collapse, Grid,
+  Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
+} from '@mui/material';
 import { 
   LineChart, 
   Line, 
@@ -23,6 +26,7 @@ import {
   Legend,
   ResponsiveContainer 
 } from 'recharts';
+import type { EvalCase } from '../types';
 import type { DashboardSummary, TrendDataPoint, EvalRunData } from './types';
 import { exportRunToCSV, exportRunToJSON, exportAggregatedCSV } from './export';
 
@@ -38,6 +42,9 @@ interface EvalDashboardProps {
   
   /** Title for the dashboard (e.g., "Calendar AI Evals") */
   title?: string;
+  
+  /** List of test cases for the "Test Suite" view */
+  testCases?: EvalCase[];
 }
 
 /**
@@ -81,9 +88,12 @@ export function EvalDashboard({
   summary, 
   trendData, 
   recentRuns,
-  title = 'AI Eval Dashboard'
+  title = 'AI Eval Dashboard',
+  testCases = []
 }: EvalDashboardProps) {
   const [showPrompt, setShowPrompt] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(summary.latestRun?.runId || null);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -159,8 +169,19 @@ export function EvalDashboard({
         </Box>
       </Box>
 
-      {/* Latest Run Details */}
-      {summary.latestRun && (
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} aria-label="eval dashboard tabs">
+          <Tab label="Statistics" />
+          <Tab label="Run History" />
+          <Tab label="Test Suite Definitions" />
+        </Tabs>
+      </Box>
+
+      {/* STATISTICS VIEW */}
+      {activeTab === 0 && (
+        <>
+          {/* Latest Run Details */}
+          {summary.latestRun && (
         <Card sx={{ mb: 3 }}>
           <CardContent sx={{ py: 2 }}>
             <Typography variant="h6" gutterBottom>
@@ -385,85 +406,7 @@ export function EvalDashboard({
         </Card>
       )}
 
-      {/* Recent Runs Table */}
-      {recentRuns.length > 0 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Recent Runs
-            </Typography>
-            <Box sx={{ overflowX: 'auto' }}>
-              {recentRuns.slice(0, 10).map((run, index) => {
-                // Calculate delta from previous run
-                const previousRun = recentRuns[index + 1];
-                const delta = previousRun ? run.passRate - previousRun.passRate : null;
-                const promptChanged = previousRun && 
-                  run.metadata.agent_config.system_prompt_hash !== previousRun.metadata.agent_config.system_prompt_hash;
-                
-                return (
-                  <Box 
-                    key={run.runId}
-                    sx={{ 
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      p: 2,
-                      borderBottom: 1,
-                      borderColor: 'divider',
-                      '&:last-child': { borderBottom: 0 }
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="body2" fontFamily="monospace">
-                        {run.runId}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {run.timestamp.toLocaleString()}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: 60 }}>
-                        {run.metadata.agent_config.model}
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 90 }}>
-                        <Typography variant="caption" color="text.secondary" fontFamily="monospace">
-                          {run.metadata.agent_config.system_prompt_hash?.substring(0, 8) || 'N/A'}
-                        </Typography>
-                        {promptChanged && (
-                          <Chip label="Prompt Changed" size="small" color="warning" sx={{ height: 16, fontSize: '0.6rem' }} />
-                        )}
-                      </Box>
-                      <Typography variant="caption" color="text.secondary" fontFamily="monospace" sx={{ minWidth: 60 }}>
-                        {run.metadata.environment.git_commit?.substring(0, 7) || 'N/A'}
-                      </Typography>
-                      <Chip 
-                        label={`${run.passRate.toFixed(0)}%`}
-                        color={run.passRate === 100 ? 'success' : run.passRate >= 80 ? 'primary' : 'warning'}
-                        size="small"
-                      />
-                      {delta !== null && (
-                        <Typography 
-                          variant="caption" 
-                          color={delta > 0 ? 'success.main' : delta < 0 ? 'error.main' : 'text.secondary'}
-                          sx={{ minWidth: 40, textAlign: 'right' }}
-                        >
-                          {delta > 0 ? '↑' : delta < 0 ? '↓' : ''}{Math.abs(delta).toFixed(1)}%
-                        </Typography>
-                      )}
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: 60 }}>
-                        {run.passedTests}/{run.totalTests}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: 50 }}>
-                        {formatTime(run.avgExecutionTime)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                );
-              })}
-            </Box>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Empty State */}
       {summary.totalRuns === 0 && (
@@ -476,6 +419,185 @@ export function EvalDashboard({
               Run your eval suite to see results here
             </Typography>
           </CardContent>
+        </Card>
+      )}
+      </>
+      )}
+
+      {/* RUN HISTORY VIEW */}
+      {activeTab === 1 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Run History
+            </Typography>
+            <Box sx={{ overflowX: 'auto' }}>
+              {recentRuns.map((run, index) => {
+                // Calculate delta from previous run
+                const previousRun = recentRuns[index + 1];
+                const delta = previousRun ? run.passRate - previousRun.passRate : null;
+                const isExpanded = selectedRunId === run.runId;
+
+                return (
+                  <Box 
+                    key={run.runId}
+                    sx={{ 
+                      mb: 2,
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <Box 
+                      onClick={() => setSelectedRunId(isExpanded ? null : run.runId)}
+                      sx={{ 
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        p: 2,
+                        bgcolor: isExpanded ? 'grey.50' : 'background.paper',
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'grey.100' }
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="body2" fontFamily="monospace" fontWeight={isExpanded ? 'bold' : 'normal'}>
+                          {run.timestamp.toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {run.runId}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                         <Typography variant="body2" color="text.secondary" sx={{ minWidth: 60 }}>
+                          {run.metadata.agent_config.model}
+                        </Typography>
+                        <Chip 
+                          label={`${run.passRate.toFixed(0)}%`}
+                          color={run.passRate === 100 ? 'success' : run.passRate >= 80 ? 'primary' : 'warning'}
+                          size="small"
+                        />
+                         {delta !== null && (
+                        <Typography 
+                          variant="caption" 
+                          color={delta > 0 ? 'success.main' : delta < 0 ? 'error.main' : 'text.secondary'}
+                          sx={{ minWidth: 40, textAlign: 'right' }}
+                        >
+                          {delta > 0 ? '↑' : delta < 0 ? '↓' : ''}{Math.abs(delta).toFixed(1)}%
+                        </Typography>
+                      )}
+                      </Box>
+                    </Box>
+                    
+                    {/* EXPANDED RESULT VIEW */}
+                    <Collapse in={isExpanded}>
+                       <Box sx={{ p: 2, pt: 0, bgcolor: 'grey.50' }}>
+                         <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>Run Results</Typography>
+                         <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ bgcolor: 'white' }}>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>ID</TableCell>
+                                <TableCell>Prompt</TableCell>
+                                <TableCell>Tags</TableCell>
+                                <TableCell>Expected</TableCell>
+                                <TableCell>Actual</TableCell>
+                                <TableCell align="right">Score</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {testCases.map((testCase) => {
+                                const result = run.results?.find(r => r.test_id === testCase.id);
+                                if (!result) return null;
+                                
+                                return (
+                                  <TableRow key={testCase.id} hover sx={result.passed ? {} : { bgcolor: '#fff5f5' }}>
+                                    <TableCell component="th" scope="row" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                                      {testCase.id}
+                                    </TableCell>
+                                    <TableCell sx={{ fontSize: '0.875rem' }}>{testCase.prompt}</TableCell>
+                                    <TableCell>
+                                       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                        {testCase.tags.slice(0, 2).map(tag => (
+                                          <Chip key={tag} label={tag} size="small" sx={{ fontSize: '0.65rem', height: 20 }} />
+                                        ))}
+                                      </Box>
+                                    </TableCell>
+                                    <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {((testCase.design as Record<string, unknown>)?.notes as string) || '-'}
+                                    </TableCell>
+                                    <TableCell sx={{ fontSize: '0.75rem', color: result.error ? 'error.main' : 'text.secondary' }}>
+                                      {result.error ? `Error: ${result.error}` : 'Success'}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      <Chip 
+                                        label={result.passed ? "1.0" : "0.0"} 
+                                        color={result.passed ? "success" : "error"} 
+                                        size="small" 
+                                        sx={{ fontSize: '0.65rem', height: 20, fontWeight: 'bold' }}
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                       </Box>
+                    </Collapse>
+                  </Box>
+                );
+              })}
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* TEST SUITE DEFINITIONS VIEW */}
+      {activeTab === 2 && (
+        <Card>
+           <CardContent>
+            <Typography variant="h6" gutterBottom>Test Suite Definitions</Typography>
+            {testCases && testCases.length > 0 ? (
+              <TableContainer component={Paper} elevation={0} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>ID</TableCell>
+                      <TableCell>Prompt</TableCell>
+                      <TableCell>Tags</TableCell>
+                      <TableCell width="30%">Expected Behavior</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {testCases.map((testCase) => (
+                      <TableRow key={testCase.id} hover>
+                        <TableCell component="th" scope="row" sx={{ fontFamily: 'monospace', fontWeight: 'medium' }}>
+                          {testCase.id}
+                        </TableCell>
+                        <TableCell>{testCase.prompt}</TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                            {testCase.tags.map(tag => (
+                              <Chip key={tag} label={tag} size="small" sx={{ fontSize: '0.7rem' }} />
+                            ))}
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+                          {((testCase.design as Record<string, unknown>)?.notes as string) || 'No design notes'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+               <Typography color="text.secondary" align="center" sx={{py: 4}}>
+                 No test cases found.
+               </Typography>
+            )}
+           </CardContent>
         </Card>
       )}
     </Box>

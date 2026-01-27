@@ -21,6 +21,7 @@ export interface CalendarAction {
   type: ActionType;
   date?: string;           // ISO date: "2026-01-15"
   notes?: string;
+  summary?: string;        // Short summary for month view
   category?: string;
   color?: string;
   time?: string;

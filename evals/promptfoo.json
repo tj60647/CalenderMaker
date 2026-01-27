@@ -1,0 +1,902 @@
+{
+  "prompts": [
+    "{{user_prompt}}"
+  ],
+  "providers": [
+    "file://./provider.ts"
+  ],
+  "defaultTest": {
+    "options": {
+      "provider": {
+        "text": {
+          "id": "timetwin-agent",
+          "config": {}
+        }
+      }
+    }
+  },
+  "tests": [
+    {
+      "vars": {
+        "user_prompt": "what's the week of march 24 2026",
+        "initial_calendar": [],
+        "id": "week-understanding-1"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should explain Sun-Sat range clearly"
+        }
+      ],
+      "tags": [
+        "week-understanding",
+        "tool-usage"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "cancel classes week of march 24",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Physics Lab",
+            "category": "academic"
+          },
+          {
+            "date": "2026-03-26",
+            "notes": "Physics Lab",
+            "category": "academic"
+          },
+          {
+            "date": "2026-03-28",
+            "notes": "Physics Lab",
+            "category": "academic"
+          }
+        ],
+        "id": "week-understanding-2"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should list all classes found and ask which to cancel"
+        }
+      ],
+      "tags": [
+        "week-understanding",
+        "conflict-detection",
+        "clarification"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "no class week of march 24",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Physics Lab",
+            "category": "academic"
+          },
+          {
+            "date": "2026-03-26",
+            "notes": "Physics Lab",
+            "category": "academic"
+          }
+        ],
+        "id": "week-understanding-3"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should show existing classes and ask if all should be cancelled"
+        }
+      ],
+      "tags": [
+        "week-understanding",
+        "conflict-detection",
+        "ambiguity"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add dentist appointment march 24 at 2pm",
+        "initial_calendar": [],
+        "id": "tool-usage-1"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 1"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Simple request, should just add it"
+        }
+      ],
+      "tags": [
+        "tool-usage",
+        "date-parsing",
+        "action-correctness"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add meeting on march 24",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Dentist appointment at 2pm",
+            "time": "14:00"
+          }
+        ],
+        "id": "tool-usage-2"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should notice existing appointment and ask about timing"
+        }
+      ],
+      "tags": [
+        "tool-usage",
+        "conflict-detection",
+        "clarification"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "what do i have on march 24",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Dentist",
+            "time": "14:00"
+          },
+          {
+            "date": "2026-03-24",
+            "notes": "Team meeting",
+            "time": "10:00"
+          }
+        ],
+        "id": "tool-usage-3"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should list all events for that day"
+        }
+      ],
+      "tags": [
+        "tool-usage",
+        "query"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "schedule physics lab every monday",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Doctor appointment",
+            "time": "14:00"
+          }
+        ],
+        "id": "conflict-detection-1"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should notice March 24 is Monday with existing appointment"
+        }
+      ],
+      "tags": [
+        "conflict-detection",
+        "recurring",
+        "tool-usage"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add study session march 24 afternoon",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Dentist at 2pm",
+            "time": "14:00",
+            "duration": 60
+          }
+        ],
+        "id": "conflict-detection-2"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should mention 2pm conflict and suggest times"
+        }
+      ],
+      "tags": [
+        "conflict-detection",
+        "time-parsing"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "move my meeting to march 24",
+        "initial_calendar": [
+          {
+            "date": "2026-03-20",
+            "notes": "Team meeting",
+            "time": "10:00",
+            "id": "mtg-123"
+          },
+          {
+            "date": "2026-03-24",
+            "notes": "Dentist",
+            "time": "14:00"
+          }
+        ],
+        "id": "conflict-detection-3"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should mention existing dentist appointment"
+        }
+      ],
+      "tags": [
+        "conflict-detection",
+        "update-action"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add lunch tomorrow at noon",
+        "initial_calendar": [],
+        "id": "date-parsing-1"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 1"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Tomorrow from 2026-01-08 is 2026-01-09"
+        }
+      ],
+      "tags": [
+        "date-parsing",
+        "relative-dates"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "schedule meeting next tuesday",
+        "initial_calendar": [],
+        "id": "date-parsing-2"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 1"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Next Tuesday from 2026-01-08 (Thu) is 2026-01-14"
+        }
+      ],
+      "tags": [
+        "date-parsing",
+        "relative-dates"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add appointment on 3/24",
+        "initial_calendar": [],
+        "id": "date-parsing-3"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 1"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should parse M/D format correctly"
+        }
+      ],
+      "tags": [
+        "date-parsing",
+        "format-variation"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "meeting on march 24th",
+        "initial_calendar": [],
+        "id": "date-parsing-4"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 1"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should handle ordinal dates"
+        }
+      ],
+      "tags": [
+        "date-parsing",
+        "format-variation"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add task for Q1 2026",
+        "initial_calendar": [],
+        "id": "date-parsing-5"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Q1 is ambiguous - should ask for specific date"
+        }
+      ],
+      "tags": [
+        "date-parsing",
+        "ambiguity",
+        "clarification"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "cancel my class",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Physics Lab"
+          },
+          {
+            "date": "2026-03-25",
+            "notes": "Math Lecture"
+          },
+          {
+            "date": "2026-03-26",
+            "notes": "Physics Lab"
+          }
+        ],
+        "id": "clarification-1"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Multiple classes exist - should ask which one"
+        }
+      ],
+      "tags": [
+        "clarification",
+        "ambiguity",
+        "search"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "move the meeting",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Team meeting",
+            "id": "mtg-1"
+          },
+          {
+            "date": "2026-03-25",
+            "notes": "Client meeting",
+            "id": "mtg-2"
+          }
+        ],
+        "id": "clarification-2"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should ask which meeting and when to move it"
+        }
+      ],
+      "tags": [
+        "clarification",
+        "ambiguity",
+        "update-action"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add spring break",
+        "initial_calendar": [],
+        "id": "clarification-3"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should ask for specific dates"
+        }
+      ],
+      "tags": [
+        "clarification",
+        "ambiguity",
+        "date-parsing"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add meeting on february 30",
+        "initial_calendar": [],
+        "id": "edge-invalid-date"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should gracefully explain invalid date"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "error-handling"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add meeting on january 1 2025",
+        "initial_calendar": [],
+        "id": "edge-past-date"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should notice past date and confirm"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "date-validation"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add appointment december 31 2030",
+        "initial_calendar": [],
+        "id": "edge-far-future"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 1"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should handle far future dates"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "date-parsing"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add dentist march 24 at 2pm and meeting march 25 at 10am",
+        "initial_calendar": [],
+        "id": "multi-action-1"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 2"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should create both events correctly"
+        }
+      ],
+      "tags": [
+        "multi-action",
+        "action-correctness"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "cancel march 24 and 25 appointments",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Dentist",
+            "id": "apt-1"
+          },
+          {
+            "date": "2026-03-25",
+            "notes": "Doctor",
+            "id": "apt-2"
+          }
+        ],
+        "id": "multi-action-2"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 2"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should confirm both deletions"
+        }
+      ],
+      "tags": [
+        "multi-action",
+        "delete-action"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add work meeting march 24",
+        "initial_calendar": [],
+        "id": "category-1"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 1"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should infer 'work' category"
+        }
+      ],
+      "tags": [
+        "categorization",
+        "action-correctness"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add dentist appointment",
+        "initial_calendar": [],
+        "id": "category-2"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should ask for date"
+        }
+      ],
+      "tags": [
+        "clarification",
+        "missing-info"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add 2 hour meeting march 24 at 10am",
+        "initial_calendar": [],
+        "id": "time-duration-1"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 1"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should capture 2 hours = 120 minutes"
+        }
+      ],
+      "tags": [
+        "time-parsing",
+        "duration"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "add lunch march 24 at noon",
+        "initial_calendar": [],
+        "id": "time-duration-2"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 1"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should parse 'noon' as 12:00"
+        }
+      ],
+      "tags": [
+        "time-parsing",
+        "format-variation"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "show me all physics classes",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Physics Lab"
+          },
+          {
+            "date": "2026-03-26",
+            "notes": "Physics Lab"
+          },
+          {
+            "date": "2026-03-25",
+            "notes": "Math Lecture"
+          }
+        ],
+        "id": "search-keyword-1"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should find only Physics classes"
+        }
+      ],
+      "tags": [
+        "search",
+        "tool-usage"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "find my doctor appointments",
+        "initial_calendar": [
+          {
+            "date": "2026-03-24",
+            "notes": "Dentist appointment"
+          },
+          {
+            "date": "2026-03-25",
+            "notes": "Physical exam"
+          },
+          {
+            "date": "2026-03-26",
+            "notes": "Team meeting"
+          }
+        ],
+        "id": "search-keyword-2"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should find both health-related appointments"
+        }
+      ],
+      "tags": [
+        "search",
+        "semantic-understanding"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "i have spring break coming up",
+        "initial_calendar": [],
+        "id": "conversational-1"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "javascript",
+          "value": "JSON.parse(output).actions.length === 0 && JSON.parse(output).message.includes(\"?\")"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should ask how to help - add note? clear schedule?"
+        }
+      ],
+      "tags": [
+        "conversational",
+        "open-ended"
+      ]
+    },
+    {
+      "vars": {
+        "user_prompt": "my schedule is too busy next week",
+        "initial_calendar": [
+          {
+            "date": "2026-01-13",
+            "notes": "Meeting 1"
+          },
+          {
+            "date": "2026-01-14",
+            "notes": "Meeting 2"
+          },
+          {
+            "date": "2026-01-15",
+            "notes": "Meeting 3"
+          }
+        ],
+        "id": "conversational-2"
+      },
+      "assert": [
+        {
+          "type": "is-json",
+          "value": "required: [\"message\", \"actions\"]"
+        },
+        {
+          "type": "llm-rubric",
+          "value": "The response must satisfy these design requirements: Should acknowledge concern and offer to help reorganize"
+        }
+      ],
+      "tags": [
+        "conversational",
+        "empathy"
+      ]
+    }
+  ]
+}

@@ -36,6 +36,7 @@ export interface CalendarDateCell {
   hasNotes: boolean;         // Does this date have notes?
   displayText: string;       // What to show in the cell (usually day number)
   color?: string;            // Background color (if has notes)
+  notes: CalendarNote[];     // All notes for this specific date
 }
 
 /**
@@ -118,7 +119,8 @@ export function generateCalendarDates(
       isToday,
       hasNotes: hasNotesFlag,
       displayText: format(date, 'd'), // Just the day number (1-31)
-      color: cellColor
+      color: cellColor,
+      notes: notesForDate
     };
   });
 }

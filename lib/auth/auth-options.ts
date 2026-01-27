@@ -26,7 +26,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
  * Using a consistent ID now means our repository pattern works correctly
  * even before we have real multi-user support.
  */
-export const DEMO_USER_ID = 'demo-user-local-001';
+export const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001'; // Valid UUID for Database Compatibility
 
 /**
  * NextAuth configuration
@@ -111,6 +111,15 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.userId = user.id;
       }
+      
+      // MIGRATION FIX:
+      // If the user has an old session with the string ID "demo-user-local-001",
+      // upgrade them to the new UUID format automatically.
+      // This prevents "invalid input syntax for type uuid" database errors.
+      if (token.userId === 'demo-user-local-001') {
+        token.userId = DEMO_USER_ID;
+      }
+      
       return token;
     },
 

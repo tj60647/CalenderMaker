@@ -11,6 +11,7 @@
 
 import { Box } from '@mui/material';
 import path from 'path';
+import fs from 'fs';
 import { 
   EvalDashboard,
   loadAllRuns, 
@@ -28,6 +29,7 @@ import {
 export default function EvalsPage() {
   // Path to eval results (relative to project root)
   const resultsDir = path.join(process.cwd(), 'evals', 'results');
+  const evalsPath = path.join(process.cwd(), 'evals', 'calendar-evals.jsonl');
   
   // Load all runs from disk
   const runs = loadAllRuns(resultsDir);
@@ -41,6 +43,18 @@ export default function EvalsPage() {
   // Recent runs for the table (newest 10)
   const recentRuns = runs.slice(0, 10);
 
+  // Load eval cases
+  let testCases = [];
+  try {
+    const fileContent = fs.readFileSync(evalsPath, 'utf-8');
+    testCases = fileContent
+      .split('\n')
+      .filter(line => line.trim())
+      .map(line => JSON.parse(line));
+  } catch (error) {
+    console.error('Failed to load eval cases:', error);
+  }
+
   return (
     <Box>
       <EvalDashboard
@@ -48,6 +62,7 @@ export default function EvalsPage() {
         summary={summary}
         trendData={trendData}
         recentRuns={recentRuns}
+        testCases={testCases}
       />
     </Box>
   );

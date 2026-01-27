@@ -38,8 +38,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>AI Calendar Generator</title>
-        <meta name="description" content="Create beautiful calendars with AI conversation" />
+        <title>TimeTwin</title>
+        <meta name="description" content="Your AI calendar assistant and twin" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
       </head>
       <body>

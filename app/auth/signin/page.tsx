@@ -93,7 +93,7 @@ export default function SignInPage() {
             />
           </Box>
           <Typography variant="h4" component="h1" gutterBottom align="center">
-            AI Calendar Generator
+            TimeTwin
           </Typography>
           
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>

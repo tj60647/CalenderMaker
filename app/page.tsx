@@ -21,6 +21,7 @@ import { Calendar } from '@/components/calendar/Calendar';
 import { DateDetailPanel } from '@/components/calendar/DateDetailPanel';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { JSONViewer } from '@/components/calendar/JSONViewer';
+import { Clock } from '@/components/common/Clock';
 import { CalendarNote, ColorScheme } from '@/types';
 import { notesRepo } from '@/lib/repositories';
 import { exportCalendarAsSVG, exportCalendarAsPNG } from '@/lib/export-utils';
@@ -63,13 +64,13 @@ export default function Home() {
   const [jsonViewerOpen, setJsonViewerOpen] = useState(false);
   
   // Export date range
-  const [exportStartDate, setExportStartDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [exportStartDate, setExportStartDate] = useState<string>(() => {
+    const date = new Date();
+    return new Date(date.getFullYear(), date.getMonth(), 1).toLocaleDateString('en-CA');
+  });
   const [exportEndDate, setExportEndDate] = useState<string>(() => {
-    const oneMonthLater = new Date();
-    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
-    return oneMonthLater.toISOString().split('T')[0];
+    const date = new Date();
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).toLocaleDateString('en-CA');
   });
 
   /**
@@ -126,8 +127,8 @@ export default function Home() {
    * Export calendar as SVG
    */
   function handleExportSVG() {
-    const startDate = new Date(exportStartDate);
-    const endDate = new Date(exportEndDate);
+    const startDate = new Date(exportStartDate + 'T00:00:00');
+    const endDate = new Date(exportEndDate + 'T00:00:00');
     exportCalendarAsSVG(startDate, endDate, notes, DEFAULT_COLOR_SCHEME);
   }
 
@@ -135,8 +136,8 @@ export default function Home() {
    * Export calendar as PNG
    */
   function handleExportPNG() {
-    const startDate = new Date(exportStartDate);
-    const endDate = new Date(exportEndDate);
+    const startDate = new Date(exportStartDate + 'T00:00:00');
+    const endDate = new Date(exportEndDate + 'T00:00:00');
     exportCalendarAsPNG(startDate, endDate, notes, DEFAULT_COLOR_SCHEME);
   }
 
@@ -183,13 +184,15 @@ export default function Home() {
             />
             <Box>
               <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, mb: 0 }}>
-                AI Calendar Generator
+                TimeTwin
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Welcome, {session.user.name}
               </Typography>
             </Box>
           </Box>
+
+          <Clock />
 
           <Button variant="outlined" onClick={handleSignOut}>
             Sign Out
@@ -226,11 +229,10 @@ export default function Home() {
                 >
                   {/* Generate last 3 months and next 3 months as options */}
                   {Array.from({ length: 7 }, (_, i) => {
-                    const date = new Date();
-                    date.setMonth(date.getMonth() - 3 + i);
-                    date.setDate(1);
-                    const dateStr = date.toISOString().split('T')[0];
-                    const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    const now = new Date();
+                    const date = new Date(now.getFullYear(), now.getMonth() - 3 + i, 1);
+                    const dateStr = date.toLocaleDateString('en-CA');
+                    const label = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
                     return (
                       <MenuItem key={dateStr} value={dateStr}>
                         {label}
@@ -248,11 +250,10 @@ export default function Home() {
                   onChange={(e) => setExportEndDate(e.target.value)}
                 >
                   {Array.from({ length: 7 }, (_, i) => {
-                    const date = new Date();
-                    date.setMonth(date.getMonth() - 3 + i);
-                    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-                    const dateStr = lastDay.toISOString().split('T')[0];
-                    const label = lastDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    const now = new Date();
+                    const date = new Date(now.getFullYear(), now.getMonth() - 3 + i + 1, 0);
+                    const dateStr = date.toLocaleDateString('en-CA');
+                    const label = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
                     return (
                       <MenuItem key={dateStr} value={dateStr}>
                         {label}
@@ -293,8 +294,13 @@ export default function Home() {
               <Calendar
                 userId={session.user.id}
                 onDateSelect={setSelectedDate}
+                onRangeChange={(start, end) => {
+                  setExportStartDate(start);
+                  setExportEndDate(end);
+                }}
                 selectedDate={selectedDate || undefined}
                 colorScheme={DEFAULT_COLOR_SCHEME}
+                notes={notes}
               />
             </Box>
 
