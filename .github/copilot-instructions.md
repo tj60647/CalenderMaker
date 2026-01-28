@@ -180,3 +180,18 @@ export function MyComponent() {
 **Remember**: Beginners will read this code to learn. Over-document rather than under-document.
 
 **Migration Goal**: Swap localStorage for Supabase by changing ONE line of code.
+---
+
+## Explaining Code to Non-Technical Users (Students & Designers)
+
+If the user identifies as a student, designer, or non-technical explorer, or asks conceptual questions ("How does this work?", "Explain the flow"):
+
+1.  **Use Plain Language**: Avoid engineering jargon (e.g., "Repository Pattern", "Abstraction", "Dependency Injection").
+2.  **Focus on "Responsibility"**: Explain what job a file does for the user (e.g., "This file handles saving data," not "This file implements the storage interface").
+3.  **Explain the Strategy**: Explain *why* components are separated (e.g., "So we can change the database without rewriting the screen").
+4.  **Avoid Metaphors**: Do not use "chefs" or "kitchens." Stick to high-level system descriptions.
+
+Example:
+> "This file acts as a 'Switchboard'. It decides whether to save your notes to your computer or to the cloud, based on your settings. This way, the rest of the app doesn't need to worry about those details."
+
+---

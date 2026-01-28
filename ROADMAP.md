@@ -1,8 +1,8 @@
 # Calendar Maker - Product Roadmap
 
-**Last Updated:** 2026-01-09  
-**Current Version:** 0.1.0 (MVP)  
-**Status:** Ready for limited user testing
+**Last Updated:** 2026-01-28  
+**Current Version:** 0.1.1 (Deployed Beta)  
+**Status:** Live on Vercel / Beta Testing
 
 ---
 
@@ -53,7 +53,7 @@ Transform calendar creation from a manual, design-heavy process into a conversat
 **Goal:** Make project usable by external developers and users
 
 **Tasks:**
-- [ ] Write comprehensive README.md ⚠️ **CRITICAL**
+- [x] Write comprehensive README.md ⚠️ **CRITICAL**
   - Product description and value proposition
   - Installation instructions
   - Environment variable setup
@@ -67,7 +67,7 @@ Transform calendar creation from a manual, design-heavy process into a conversat
   - PR process
   - Development setup
   
-- [ ] Add .env.example
+- [x] Add .env.example
   - Document all required variables
   - Add setup instructions
   

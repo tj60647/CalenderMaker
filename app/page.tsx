@@ -74,15 +74,6 @@ export default function Home() {
   });
 
   /**
-   * Redirect to sign-in if not authenticated
-   */
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    }
-  }, [status, router]);
-
-  /**
    * Load notes when user logs in
    */
   useEffect(() => {

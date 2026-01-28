@@ -8,8 +8,28 @@ Transform calendar creation from a manual, design-heavy process into a natural c
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-16.1-black.svg)](https://nextjs.org/)
 [![Test Coverage](https://img.shields.io/badge/coverage-27%25-yellow.svg)](./CODEBASE_ANALYSIS.md)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-black.svg?logo=vercel)](https://calender-maker.vercel.app/)
 
 ![Calendar Maker Demo](https://via.placeholder.com/800x400/3b82f6/ffffff?text=Calendar+Maker+Demo+GIF+Coming+Soon)
+
+---
+
+## 🚀 Live Demo
+
+**Try the live version here:** [https://calender-maker.vercel.app/](https://calender-maker.vercel.app/)
+
+---
+
+## 👩‍🎓 For Students & Designers
+
+This repository is designed as a **Teaching Tool** for Interaction Design and HCD students.
+If you are exploring this codebase to understand how AI Systems work:
+
+1.  **Start Here:** Read the [System Strategic Guide](ARCHITECTURE_AND_DESIGN.md).
+    *   It explains the system strategy and data flow in plain language.
+    *   It maps the project files to User Experience concepts.
+2.  **Ask Questions:** This repo includes **AI Instructions**. If you use GitHub Copilot or a similar coding assistant, it is primed to explain the *strategic rationale* behind the system's setup without using technical jargon.
+    *   *Try asking: "Which part of the system decides where to save data?"*
 
 ---
 
