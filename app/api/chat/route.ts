@@ -107,25 +107,11 @@ export async function POST(request: NextRequest) {
       toolExecutor: (name, args) => executeRealTool(name, args, userId)
     });
 
-    // Return final response (mimicking original structure)
-    // The original code expected the *full OpenRouter response object* in some places, 
-    // but typically the client just wants the content or the validation.
-    // However, the client might expect the exact structure runAgent returns? 
-    // Let's check what the client expects.
-    // Looking at the original code, it returned `response.json()` which is the OpenAI format.
-    
-    // Actually, looking at the client side `ChatInterface.tsx` (not visible but inferred), usually we return just the message or a stream.
-    // But `route.ts` was returning `assistantMessage` content wrapped in a bigger object?
-    // Wait, the original code returned `NextResponse.json(data)`. `data` is the OpenRouter completion object.
-    
-    // `runAgent` returns `{ message, toolCalls, rawResponse }`.
-    // So we should return `rawResponse` if we want to maintain exact compatibility.
-    
-    // BUT! Since we handle the loop on the server now, we just want to return the FINAL answer.
-    // If the frontend expects a streaming response or intermediary steps, this changes things.
-    // Assuming standard "request/response" chat where the server handles tools:
-    
-    return NextResponse.json(result.rawResponse);
+    // Return final message to the client
+    return NextResponse.json({ 
+        message: result.message,
+        toolCalls: result.toolCalls 
+    });
 
   } catch (error) {
     console.error(`[${requestId}] Error:`, error);

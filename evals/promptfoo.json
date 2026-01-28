@@ -9,9 +9,13 @@
     "options": {
       "provider": {
         "text": {
-          "id": "timetwin-agent",
+          "id": "file://./provider.ts",
           "config": {}
         }
+      },
+      "rubricProvider": {
+        "id": "openrouter:openai/gpt-4o",
+        "config": {}
       }
     }
   },
@@ -25,7 +29,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "llm-rubric",
@@ -62,7 +72,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -99,7 +115,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -125,7 +147,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -157,7 +185,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -194,7 +228,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "llm-rubric",
@@ -221,7 +261,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -254,7 +300,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -291,7 +343,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -316,7 +374,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -341,7 +405,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -366,7 +436,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -391,7 +467,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -416,7 +498,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -455,7 +543,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -492,7 +586,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -518,7 +618,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -544,7 +650,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -569,7 +681,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -594,7 +712,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -619,7 +743,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -655,7 +785,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -680,7 +816,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -705,7 +847,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -730,7 +878,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -755,7 +909,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -793,7 +953,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "llm-rubric",
@@ -827,7 +993,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "llm-rubric",
@@ -848,7 +1020,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "javascript",
@@ -886,7 +1064,13 @@
       "assert": [
         {
           "type": "is-json",
-          "value": "required: [\"message\", \"actions\"]"
+          "value": {
+            "required": [
+              "message",
+              "actions"
+            ],
+            "type": "object"
+          }
         },
         {
           "type": "llm-rubric",

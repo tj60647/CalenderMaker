@@ -12,6 +12,8 @@
 'use client';
 
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { 
   Box, Card, CardContent, Typography, Chip, Button, Collapse, Grid,
   Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
@@ -45,6 +47,9 @@ interface EvalDashboardProps {
   
   /** List of test cases for the "Test Suite" view */
   testCases?: EvalCase[];
+
+  /** Results from Promptfoo JSON output */
+  promptfooResults?: any;
 }
 
 /**
@@ -89,7 +94,8 @@ export function EvalDashboard({
   trendData, 
   recentRuns,
   title = 'AI Eval Dashboard',
-  testCases = []
+  testCases = [],
+  promptfooResults
 }: EvalDashboardProps) {
   const [showPrompt, setShowPrompt] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
@@ -174,6 +180,8 @@ export function EvalDashboard({
           <Tab label="Statistics" />
           <Tab label="Run History" />
           <Tab label="Test Suite Definitions" />
+          <Tab label="Methodology" />
+          <Tab label="Promptfoo Results" />
         </Tabs>
       </Box>
 
@@ -598,6 +606,202 @@ export function EvalDashboard({
                </Typography>
             )}
            </CardContent>
+        </Card>
+      )}
+
+      {/* METHODOLOGY VIEW */}
+      {activeTab === 3 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              Evaluation Methodology
+            </Typography>
+            <Typography variant="body1" color="text.secondary" paragraph>
+              This evaluation system connects design-authored intent to repeatable behavioral evidence using <strong>Promptfoo</strong>.
+            </Typography>
+
+            <Grid container spacing={4} sx={{ mt: 2 }}>
+              <Grid size={{ md: 6 }}>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Core Architecture
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, color: 'text.secondary' }}>
+                  <Box component="li" sx={{ mb: 1 }}>
+                    <strong>YAML (Specification):</strong> Declares evaluation intent, scenarios, and assertions. These are version-controlled and reviewed by design.
+                  </Box>
+                  <Box component="li" sx={{ mb: 1 }}>
+                    <strong>Promptfoo (Engine):</strong> Expands these scenarios into executable cases (Scenario × Variant × Parameters).
+                  </Box>
+                  <Box component="li" sx={{ mb: 1 }}>
+                    <strong>JSONL (Evidence):</strong> Records what actually happened. These are immutable logs of behavior.
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid size={{ md: 6 }}>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Evaluation Criteria
+                </Typography>
+                 <Box component="ul" sx={{ pl: 2, color: 'text.secondary' }}>
+                  <Box component="li" sx={{ mb: 1 }}>
+                    <strong>Rule-Based Assertions:</strong> Strict checks (e.g., "Must call `get_date_notes`").
+                  </Box>
+                  <Box component="li" sx={{ mb: 1 }}>
+                    <strong>LLM-as-a-Judge:</strong> Semantic grading using a stronger model (GPT-4o) to assess qualities like "Tone", "Clarity", or "Helpfulness" based on the Design Notes rubrics.
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid size={12}>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Workflow
+                </Typography>
+                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    <Typography variant="body2" component="div" fontFamily="monospace">
+                      1. Author Scenarios (YAML) <br/>
+                      &nbsp;&nbsp;&nbsp;↳ Define what "Good" looks like (Design Intent)<br/><br/>
+                      2. Configure Variants<br/>
+                      &nbsp;&nbsp;&nbsp;↳ Prompt V1 vs V2, Model A vs B<br/><br/>
+                      3. Process Expansion (Promptfoo)<br/>
+                      &nbsp;&nbsp;&nbsp;↳ Generates executable test matrix<br/><br/>
+                      4. Execution (Stateless Provider)<br/>
+                      &nbsp;&nbsp;&nbsp;↳ Mocks DB state → Runs Agent → Captures Output<br/><br/>
+                      5. Analysis (Dashboard)<br/>
+                      &nbsp;&nbsp;&nbsp;↳ Review Pass Rates, Regressions, and Semantic Grades
+                    </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* PROMPTFOO RESULTS VIEW */}
+      {activeTab === 4 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              Latest Promptfoo Run
+            </Typography>
+            {promptfooResults && promptfooResults.results && promptfooResults.results.results ? (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'grey.50' }}>
+                      <TableCell>Status</TableCell>
+                      <TableCell>ID</TableCell>
+                      <TableCell>User Prompt</TableCell>
+                      <TableCell>Initial Calendar</TableCell>
+                      <TableCell>Agent Output</TableCell>
+                      <TableCell>Grading & Evidence</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {promptfooResults.results.results.map((result: any, idx: number) => {
+                      const vars = result.testCase?.vars || result.vars || {};
+                      const initialCalendar = vars.initial_calendar || [];
+                      const grading = result.gradingResult;
+                      
+                      return (
+                        <TableRow key={idx} hover>
+                          {/* Status */}
+                          <TableCell>
+                            {result.success ? (
+                              <Chip label="PASS" color="success" size="small" />
+                            ) : (
+                              <Chip label="FAIL" color="error" size="small" />
+                            )}
+                          </TableCell>
+                          
+                          {/* ID */}
+                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                            {vars.id || `test-${idx}`}
+                          </TableCell>
+
+                           {/* User Prompt */}
+                           <TableCell>
+                            <Typography variant="body2">{vars.user_prompt}</Typography>
+                          </TableCell>
+
+                          {/* Initial Calendar */}
+                          <TableCell>
+                            {Array.isArray(initialCalendar) && initialCalendar.length > 0 ? (
+                               <Box sx={{ maxHeight: 150, overflowY: 'auto', fontSize: '0.75rem' }}>
+                                 <pre style={{ margin: 0 }}>
+                                   {JSON.stringify(initialCalendar, null, 2)}
+                                 </pre>
+                               </Box>
+                            ) : (
+                              <Typography variant="caption" color="text.secondary">Empty / Not Array</Typography>
+                            )}
+                          </TableCell>
+
+                           {/* Agent Output */}
+                           <TableCell>
+                            <Box sx={{ 
+                              maxHeight: 250, 
+                              maxWidth: 350,
+                              overflowY: 'auto', 
+                              fontSize: '0.75rem', 
+                              bgcolor: 'background.paper',
+                              p: 1,
+                              borderRadius: 1,
+                              border: '1px solid #e0e0e0',
+                              '& p': { m: 0, mb: 0.5 },
+                              '& pre': { m: 0, p: 1, bgcolor: '#f5f5f5', borderRadius: 1, overflowX: 'auto' }
+                            }}>
+                               {typeof result.response?.output === 'string' ? (
+                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                   {result.response.output}
+                                 </ReactMarkdown>
+                               ) : (
+                                 <pre style={{ margin: 0, fontFamily: 'monospace' }}>
+                                   {JSON.stringify(result.response?.output, null, 2)}
+                                 </pre>
+                               )}
+                            </Box>
+                          </TableCell>
+
+                          {/* Grading Evidence */}
+                          <TableCell>
+                           <Box sx={{ maxWidth: 350 }}>
+                             {grading?.componentResults?.map((comp: any, cIdx: number) => (
+                               <Box key={cIdx} sx={{ mb: 1, p: 1, border: 1, borderColor: comp.pass ? 'success.light' : 'error.light', borderRadius: 1, bgcolor: comp.pass ? 'rgba(76, 175, 80, 0.04)' : 'rgba(211, 47, 47, 0.04)' }}>
+                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                    <Typography variant="caption" fontWeight="bold">
+                                      {comp.assertion?.type === 'llm-rubric' ? 'LLM Judge' : comp.assertion?.type || 'Assertion'}
+                                    </Typography>
+                                    {comp.pass ? (
+                                      <Typography variant="caption" color="success.main" fontWeight="bold">✔ Pass</Typography>
+                                    ) : (
+                                      <Typography variant="caption" color="error.main" fontWeight="bold">✘ Fail</Typography>
+                                    )}
+                                 </Box>
+                                 <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 0.5, fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                                   Rule: {String(comp.assertion?.value || '').substring(0, 150)}
+                                   {String(comp.assertion?.value || '').length > 150 ? '...' : ''}
+                                 </Typography>
+                                  {comp.reason && (
+                                     <Box sx={{ mt: 0.5, p: 0.5, bgcolor: 'rgba(0,0,0,0.03)', borderRadius: 1 }}>
+                                       <Typography variant="caption" display="block" sx={{ fontStyle: 'italic', fontWeight: 500 }}>
+                                         "{comp.reason}"
+                                       </Typography>
+                                     </Box>
+                                  )}
+                               </Box>
+                             ))}
+                           </Box>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+                <Typography color="text.secondary">No promptfoo results found. Run `npx promptfoo eval` to generate.</Typography>
+            )}
+          </CardContent>
         </Card>
       )}
     </Box>

@@ -41,7 +41,7 @@ function convert() {
     // Check if output is valid JSON
     asserts.push({
       type: 'is-json',
-      value: 'required: ["message", "actions"]' 
+      value: { required: ["message", "actions"], type: "object" }
     });
 
     if (c.engineering?.shouldAskClarification) {
@@ -86,10 +86,17 @@ function convert() {
       options: {
         provider: {
             text: {
-                id: 'timetwin-agent',
+                id: 'file://./provider.ts',
                 config: {
                     // Env vars usually picked up automatically
                 }
+            }
+        },
+        // Explicitly use OpenRouter for the Judge (Rubric)
+        rubricProvider: {
+            id: 'openrouter:openai/gpt-4o',
+            config: {
+                apiKey: process.env.OPENROUTER_CALENDARMAKER_API_KEY
             }
         }
       }

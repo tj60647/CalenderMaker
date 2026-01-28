@@ -56,6 +56,11 @@ export function parseAIResponse(aiMessage: string): AIResponse {
   console.log(aiMessage);
   console.log('[AI Actions Parser] ===== END RAW MESSAGE =====');
 
+  if (!aiMessage) {
+    console.warn('[AI Actions Parser] Received empty or undefined message');
+    return { message: '', actions: [] };
+  }
+
   try {
     // Parse the JSON response
     const parsed = JSON.parse(aiMessage);
@@ -102,12 +107,12 @@ export function parseAIResponse(aiMessage: string): AIResponse {
   } catch (error) {
     console.error('[AI Actions Parser] Failed to parse JSON response:', {
       error: error instanceof Error ? error.message : String(error),
-      rawMessage: aiMessage.substring(0, 200)
+      rawMessage: (aiMessage || '').substring(0, 200)
     });
     
     // Fallback: return the raw message as-is
     return {
-      message: aiMessage,
+      message: aiMessage || '',
       actions: []
     };
   }

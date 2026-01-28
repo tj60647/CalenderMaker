@@ -55,6 +55,18 @@ export default function EvalsPage() {
     console.error('Failed to load eval cases:', error);
   }
 
+  // Load Promptfoo Results
+  let promptfooResults = null;
+  try {
+    const pfooPath = path.join(process.cwd(), 'evals', 'promptfoo-latest.json');
+    if (fs.existsSync(pfooPath)) {
+      const content = fs.readFileSync(pfooPath, 'utf-8');
+      promptfooResults = JSON.parse(content);
+    }
+  } catch (error) {
+    console.error('Failed to load promptfoo results:', error);
+  }
+
   return (
     <Box>
       <EvalDashboard
@@ -63,6 +75,7 @@ export default function EvalsPage() {
         trendData={trendData}
         recentRuns={recentRuns}
         testCases={testCases}
+        promptfooResults={promptfooResults}
       />
     </Box>
   );

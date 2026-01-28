@@ -8,9 +8,9 @@
  * @created 2026-01-26
  */
 
-import { runAgent } from '../lib/chat-agent.ts';
-import { SYSTEM_PROMPT_V1 } from '../lib/prompts/system-v1.ts';
-import type { ProviderResponse, CallApiContext } from 'promptfoo';
+import { runAgent } from '../lib/chat-agent';
+import { SYSTEM_PROMPT_V1 } from '../lib/prompts/system-v1';
+import type { ProviderResponse, CallApiContextParams } from 'promptfoo';
 
 // Mock types
 interface CalendarNote {
@@ -30,9 +30,10 @@ export default class TimeTwinProvider {
     return 'timetwin-agent';
   }
 
-  async callApi(prompt: string, context: CallApiContext): Promise<ProviderResponse> {
-    const initialCalendar = (context.vars.initial_calendar || []) as CalendarNote[];
-    const userPrompt = context.vars.user_prompt || prompt;
+  async callApi(prompt: string, context: CallApiContextParams): Promise<ProviderResponse> {
+    const vars = context.vars || {};
+    const initialCalendar = (vars.initial_calendar || []) as CalendarNote[];
+    const userPrompt = (vars.user_prompt || prompt) as string;
 
     // Mock Tool Executor
     const toolExecutor = async (name: string, args: any): Promise<string> => {
