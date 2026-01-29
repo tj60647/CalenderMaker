@@ -17,13 +17,22 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Box, Paper, TextField, Button, Typography, Avatar, CircularProgress, IconButton, Dialog, DialogTitle, DialogContent, Collapse } from '@mui/material';
-import { Send, Settings, ChevronDown, ChevronRight, X, Activity } from 'lucide-react';
+import { Box, Paper, TextField, Button, Typography, Avatar, CircularProgress, IconButton, Dialog, DialogTitle, DialogContent, Collapse, Switch, FormControlLabel, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { Send, Settings, ChevronDown, ChevronRight, X, Activity, Paperclip, Mic, Volume2, Square } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { usePdfParser } from '@/lib/hooks/use-pdf-parser';
+import { useSpeech } from '@/lib/hooks/use-speech';
 import { parseAIResponse, isValidAction } from '@/lib/ai-actions';
 import { notesRepo } from '@/lib/repositories';
 import { AGENT_CONFIG } from '@/lib/agent-config';
+
+interface FileAttachment {
+  name: string;
+  type: string;
+  size: number;
+  content: string; // Extracted text
+}
 
 /**
  * Represents a single message in the chat
@@ -61,9 +70,67 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string>(''); // Detailed status
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showConfig, setShowConfig] = useState(false);
   const [showModelCard, setShowModelCard] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(false); // New state for auto-read
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastSpokenTimestampRef = useRef<number>(0); 
+
+  const { parsePdf, isParsing: isPdfParsing, error: pdfError } = usePdfParser();
+  const { 
+    isListening, 
+    transcript, 
+    startListening, 
+    stopListening, 
+    speak, 
+    isSpeaking, 
+    cancelSpeech, 
+    hasSupport: hasSpeechSupport,
+    setTranscript,
+    voices,
+    selectedVoice,
+    setVoiceByName
+  } = useSpeech();
+
+  // State to hold the input text before listening started
+  const [baseInput, setBaseInput] = useState('');
+
+  // When listening starts, capture the current input so we can append to it
+  useEffect(() => {
+    if (isListening) {
+      setBaseInput(input);
+    }
+  }, [isListening]);
+
+  // Sync speech transcript with input (appending to base text)
+  useEffect(() => {
+    // Only update if we are listening and have something to show
+    // Or if we just finished (transcript might still be there) - primarily rely on isListening for the active update cycle
+    if (isListening && transcript) {
+        const separator = baseInput && !baseInput.endsWith(' ') ? ' ' : '';
+        setInput(baseInput + separator + transcript);
+    }
+  }, [transcript, isListening, baseInput]);
+
+  // Handle auto-speak for new assistant messages
+  useEffect(() => {
+    if (autoSpeak && messages.length > 0 && !isLoading) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === 'assistant') {
+         const msgTime = lastMessage.timestamp.getTime();
+         if (msgTime > lastSpokenTimestampRef.current) {
+            // Only speak recent messages (within 10s)
+            if (Date.now() - msgTime < 10000) {
+                speak(lastMessage.content);
+            }
+            lastSpokenTimestampRef.current = msgTime;
+         }
+      }
+    }
+  }, [messages, autoSpeak, isLoading, speak]);
 
   /**
    * Scroll to bottom of chat
@@ -80,24 +147,59 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
    * 
    * @param userMessage - Message text from user
    */
+  /**
+   * Handle file selection
+   */
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type !== 'application/pdf') {
+        alert('Currently only PDF files are supported.');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  /**
+   * Clear selected file
+   */
+  const handleClearFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  /**
+   * Send message to AI
+   * 
+   * POSTs the conversation history to /api/chat endpoint.
+   * The API calls OpenRouter and returns the AI response.
+   * 
+   * @param userMessage - Message text from user
+   */
   async function handleSendMessage(userMessage: string) {
-    if (!userMessage.trim() || isLoading) return;
+    if ((!userMessage.trim() && !selectedFile) || isLoading) return;
 
     const clientRequestId = `client_${Date.now()}`;
-    console.log(`[${clientRequestId}] Sending chat request`, {
-      messageCount: messages.length + 1,
-      userMessage: userMessage.substring(0, 100)
-    });
+    
+    // Add user message to chat immediately
+    let displayContent = userMessage;
+    if (selectedFile) {
+        displayContent += `\n\n[Attached File: ${selectedFile.name}]`;
+    }
 
-    // Add user message to chat
     const newUserMessage: ChatMessage = {
       role: 'user',
-      content: userMessage,
+      content: displayContent,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, newUserMessage]);
+    
     setInput('');
     setIsLoading(true);
+    setLoadingStatus('Initializing...');
 
     try {
       // Get current client time with timezone
@@ -111,23 +213,45 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
         timeZoneName: 'short' 
       });
 
+      let finalMessage = userMessage;
+
+      // Step 1: Process File if exists
+      if (selectedFile) {
+        setLoadingStatus(`Reading ${selectedFile.name}...`);
+        
+        // Use client-side PDF parser
+        const text = await parsePdf(selectedFile);
+        
+        if (!text) {
+           throw new Error(pdfError || 'Failed to read file content');
+        }
+
+        // Append file content to the user message as context
+        finalMessage = `${userMessage}\n\n--- DOCUMENT CONTENT (${selectedFile.name}) ---\n${text}\n--- END DOCUMENT ---`;
+        
+        // Clear file after successful read
+        handleClearFile();
+      }
+
+      // Step 2: Send to Chat Agent
+      setLoadingStatus('AI is thinking...');
+
       // Best Practice: Send a "sliding window" of recent context (last 20 messages)
-      // This preserves context for follow-up questions ("move that meeting") 
-      // while preventing token limits and reducing cost.
       const HISTORY_LIMIT = 20;
-      const conversationHistory = [...messages, { role: 'user', content: userMessage }]
+      // We need to inject the potentially modified finalMessage into the history
+      // The last message in 'messages' state has the display version (with [Attached File...])
+      // But for the user context sent to AI, we must send the full text
+      
+      const conversationHistory = [...messages, { role: 'user', content: finalMessage }]
         .slice(-HISTORY_LIMIT)
         .map(m => ({ 
           role: m.role, 
           content: m.content 
         }));
 
-      // Call OpenRouter API via our backend
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: conversationHistory,
           userId,
@@ -137,29 +261,56 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error(`[${clientRequestId}] API Error:`, {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData
-        });
         throw new Error(errorData.error || 'Failed to get AI response');
       }
 
-      const data = await response.json();
+      // Handle streamed response (NDJSON)
+      if (!response.body) throw new Error('No response body');
       
-      console.log(`[${clientRequestId}] Response received:`, {
-        messageLength: data.message?.length || 0,
-        hasActions: data.message?.includes('[ACTIONS]')
-      });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let aiContent = '';
+      let aiActions: any[] = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        // Process complete lines
+        buffer = lines.pop() || ''; // Keep the last incomplete line in buffer
+        
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          
+          try {
+            const data = JSON.parse(line);
+            
+            if (data.type === 'status') {
+               setLoadingStatus(data.content);
+            } else if (data.type === 'result') {
+               aiContent = data.content || ''; // Fallback for safety
+               // We don't use 'toolCalls' from result yet, as we parse actions from message text
+            } else if (data.type === 'error') {
+               throw new Error(data.error);
+            }
+          } catch (e) {
+            console.error('Error parsing stream chunk:', e);
+          }
+        }
+      }
+
+      // Final processing of the accumulator
+      if (!aiContent) throw new Error('No content received from AI');
       
+      // Step 3: Handle Response
+      setLoadingStatus('Updating calendar...');
+
       // Parse AI response for actions
-      const { message: displayMessage, actions } = parseAIResponse(data.message);
-      
-      console.log(`[${clientRequestId}] Parsed response:`, {
-        displayLength: displayMessage.length,
-        actionCount: actions.length,
-        actionTypes: actions.map(a => a.type)
-      });
+      const { message: displayMessage, actions } = parseAIResponse(aiContent);
       
       const aiResponse: ChatMessage = {
         role: 'assistant',
@@ -172,21 +323,10 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
       // Execute calendar actions
       let madeChanges = false;
       
-      if (actions.length > 0) {
-        console.log(`[${clientRequestId}] Executing ${actions.length} actions`);
-      }
-      
       for (const action of actions) {
-        if (!isValidAction(action)) {
-          console.warn(`[${clientRequestId}] Invalid action:`, action);
-          continue;
-        }
+        if (!isValidAction(action)) continue;
         
-        console.log(`[${clientRequestId}] Executing action:`, {
-          type: action.type,
-          noteId: action.noteId,
-          date: action.date
-        });
+        console.log(`[${clientRequestId}] Executing action:`, action.type);
 
         try {
           if (action.type === 'add' && action.date && action.notes) {
@@ -195,7 +335,6 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
               notes: action.notes,
               summary: action.summary,
               category: action.category,
-              // Default to blue if no color provided
               color: action.color || '#3b82f6',
               time: action.time,
               duration: action.duration,
@@ -217,31 +356,29 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
             await notesRepo.delete(action.noteId, userId);
             madeChanges = true;
           }
-          console.log(`[${clientRequestId}] Action completed:`, action.type);
         } catch (error) {
           console.error(`[${clientRequestId}] Failed to execute action:`, action, error);
         }
       }
 
-      // Notify parent if changes were made
       if (madeChanges && onCalendarUpdate) {
-        console.log(`[${clientRequestId}] Calendar updated, notifying parent`);
         onCalendarUpdate();
       }
+
     } catch (error) {
+      console.error('Chat error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[${clientRequestId}] Failed to send message:`, {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: errorMessage,
-        stack: error instanceof Error ? error.stack : undefined
-      });
+      
       setMessages((prev) => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: errorMessage.includes('Failed to read file') 
+          ? `I couldn't read that file. ${errorMessage}`
+          : 'Sorry, I encountered an error. Please try again.',
         timestamp: new Date(),
       }]);
     } finally {
       setIsLoading(false);
+      setLoadingStatus('');
     }
   }
 
@@ -314,6 +451,40 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
           <Typography variant="body2" paragraph sx={{ fontFamily: 'monospace', bgcolor: 'grey.100', p: 1, borderRadius: 1 }}>
             {AGENT_CONFIG.name}
           </Typography>
+
+          {hasSpeechSupport && (
+             <Box sx={{ mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Typography variant="subtitle2">Voice Output</Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch 
+                        checked={autoSpeak}
+                        onChange={(e) => setAutoSpeak(e.target.checked)}
+                        size="small"
+                      />
+                    }
+                    label="Auto-read responses"
+                  />
+                </Box>
+                
+                <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+                  <InputLabel id="voice-select-label">Preferred Voice</InputLabel>
+                  <Select
+                    labelId="voice-select-label"
+                    value={selectedVoice?.name || ''}
+                    label="Preferred Voice"
+                    onChange={(e) => setVoiceByName(e.target.value)}
+                  >
+                    {voices.map((voice) => (
+                      <MenuItem key={voice.name} value={voice.name}>
+                        {voice.name} ({voice.lang})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+             </Box>
+          )}
 
           <Typography variant="subtitle2" gutterBottom>Active Model</Typography>
           <Typography variant="body2" paragraph sx={{ fontFamily: 'monospace', bgcolor: 'grey.100', p: 1, borderRadius: 1 }}>
@@ -460,8 +631,20 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
                   {message.content}
                 </Typography>
               )}
-              <Typography variant="caption" sx={{ opacity: 0.7, mt: 0.5, display: 'block' }}>
+              <Typography variant="caption" sx={{ opacity: 0.7, mt: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                
+                {/* Text-to-Speech Button (Only for Assistant) */}
+                {message.role === 'assistant' && hasSpeechSupport && (
+                  <IconButton 
+                    size="small" 
+                    onClick={() => speak(message.content)}
+                    sx={{ width: 20, height: 20, ml: 1, opacity: 0.6 }}
+                    title="Read aloud"
+                  >
+                    <Volume2 size={14} />
+                  </IconButton>
+                )}
               </Typography>
             </Box>
           </Box>
@@ -478,9 +661,15 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
                 p: 1.5,
                 borderRadius: 2,
                 bgcolor: 'grey.100',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
               }}
             >
-              <CircularProgress size={20} />
+              <CircularProgress size={16} />
+              <Typography variant="body2" color="text.secondary">
+                 {loadingStatus || 'Thinking...'}
+              </Typography>
             </Box>
           </Box>
         )}
@@ -496,28 +685,81 @@ export function ChatInterface({ userId, onCalendarUpdate }: ChatInterfaceProps) 
           borderTop: '1px solid',
           borderColor: 'divider',
           display: 'flex',
-          gap: 1,
+          flexDirection: 'column',
+          gap: 1
         }}
       >
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Type a message... (e.g., 'Add dentist appointment on Jan 15th')"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isLoading}
-          multiline
-          maxRows={3}
-        />
-        <Button
-          variant="contained"
-          onClick={() => handleSendMessage(input)}
-          disabled={!input.trim() || isLoading}
-          sx={{ minWidth: '44px', px: 1.5 }}
-        >
-          <Send size={20} />
-        </Button>
+        {selectedFile && (
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.5, bgcolor: 'grey.100', borderRadius: 1, width: 'fit-content' }}>
+              <Typography variant="caption" noWrap sx={{ maxWidth: 200 }}>
+                 {selectedFile.name}
+              </Typography>
+              <IconButton size="small" onClick={handleClearFile}>
+                 <X size={14} />
+              </IconButton>
+           </Box>
+        )}
+        <Box sx={{ display: 'flex', gap: 1 }}>
+           <input
+             type="file"
+             ref={fileInputRef}
+             style={{ display: 'none' }}
+             accept=".pdf"
+             onChange={handleFileSelect}
+           />
+           <IconButton 
+             onClick={() => fileInputRef.current?.click()}
+             disabled={isLoading}
+             color={selectedFile ? "primary" : "default"}
+             title="Attach PDF"
+           >
+             <Paperclip size={20} />
+           </IconButton>
+
+           {/* Voice Input Button */}
+           {hasSpeechSupport && (
+             <IconButton
+               onMouseDown={startListening}
+               onMouseUp={stopListening}
+               onMouseLeave={stopListening} // Handle dragging out
+               disabled={isLoading}
+               color={isListening ? "secondary" : "default"}
+               sx={{ 
+                 position: 'relative',
+                 bgcolor: isListening ? 'action.hover' : 'transparent',
+                 animation: isListening ? 'pulse 1.5s infinite' : 'none',
+                 '@keyframes pulse': {
+                   '0%': { boxShadow: '0 0 0 0 rgba(255, 0, 0, 0.4)' },
+                   '70%': { boxShadow: '0 0 0 10px rgba(255, 0, 0, 0)' },
+                   '100%': { boxShadow: '0 0 0 0 rgba(255, 0, 0, 0)' }
+                 }
+               }}
+               title="Hold to Speak"
+             >
+               {isListening ? <Square size={20} fill="currentColor" /> : <Mic size={20} />}
+             </IconButton>
+           )}
+
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Type a message... (e.g., 'Add dentist appointment on Jan 15th')"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isLoading}
+              multiline
+              maxRows={3}
+            />
+            <Button
+              variant="contained"
+              onClick={() => handleSendMessage(input)}
+              disabled={(!input.trim() && !selectedFile) || isLoading}
+              sx={{ minWidth: '44px', px: 1.5 }}
+            >
+              <Send size={20} />
+            </Button>
+        </Box>
       </Box>
     </Paper>
   );

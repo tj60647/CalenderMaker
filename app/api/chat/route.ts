@@ -97,20 +97,55 @@ export async function POST(request: NextRequest) {
       `You are a helpful AI assistant for a calendar application called "TimeTwin".\nCURRENT TIME FOR USER: ${clientTime || new Date().toISOString()} (Use this as "now" or "today")`
     );
 
-    // Run the agent
-    const result = await runAgent({
-      messages,
-      apiKey,
-      model: AGENT_CONFIG.model,
-      systemPrompt,
-      requestId,
-      toolExecutor: (name, args) => executeRealTool(name, args, userId)
+    // Create a stream for real-time updates
+    const encoder = new TextEncoder();
+    
+    // Create a TransformStream or just a ReadableStream
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Run the agent with progress callback
+          const result = await runAgent({
+            messages,
+            apiKey,
+            model: AGENT_CONFIG.model,
+            systemPrompt,
+            requestId,
+            toolExecutor: (name, args) => executeRealTool(name, args, userId),
+            onProgress: (status) => {
+              // Send status update
+              const chunk = JSON.stringify({ type: 'status', content: status }) + '\n';
+              controller.enqueue(encoder.encode(chunk));
+            }
+          });
+
+          // Send final result
+          const finalChunk = JSON.stringify({ 
+            type: 'result', 
+            content: result.message,
+            toolCalls: result.toolCalls 
+          }) + '\n';
+          controller.enqueue(encoder.encode(finalChunk));
+          
+          controller.close();
+        } catch (error) {
+          console.error(`[${requestId}] Error in stream:`, error);
+          const errorChunk = JSON.stringify({ 
+            type: 'error', 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+          }) + '\n';
+          controller.enqueue(encoder.encode(errorChunk));
+          controller.close();
+        }
+      }
     });
 
-    // Return final message to the client
-    return NextResponse.json({ 
-        message: result.message,
-        toolCalls: result.toolCalls 
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'application/x-ndjson',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
 
   } catch (error) {

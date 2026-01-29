@@ -95,35 +95,30 @@ cd CalendarMaker
 # Install dependencies
 npm install
 
-# Set up environment variables
-cp .env.example .env.local
-# Edit .env.local and add your OpenRouter API key
-
 # Run development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) 🎉
 
-### Environment Variables
+**Note:** The Calendar UI works immediately out-of-the-box! However, the **AI Chat** requires an API key.
 
-Create `.env.local` in the root directory:
+### Environment Variables (For AI Support)
+
+To enable the "AI Brain" (Chat), create a `.env.local` file:
 
 ```env
-# OpenRouter API Key (REQUIRED)
+# OpenRouter API Key (REQUIRED for Chat)
+# Get your key at: https://openrouter.ai/keys
 OPENROUTER_CALENDARMAKER_API_KEY=sk-or-v1-...
 
-# NextAuth Configuration
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-random-secret-here
+# Supabase (Optional - Defaults to LocalStorage if missing)
+# NEXT_PUBLIC_SUPABASE_URL=...
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 
-# Optional: Vercel Analytics
-NEXT_PUBLIC_VERCEL_ANALYTICS_ID=your-id
-```
-
-**Note:** For development, you can use any random string for `NEXTAUTH_SECRET`. Generate one with:
-```bash
-openssl rand -base64 32
+# NextAuth (Optional - Defaults to dev secret if missing)
+# NEXTAUTH_SECRET=your-random-secret-here
+# NEXTAUTH_URL=http://localhost:3000
 ```
 
 ---

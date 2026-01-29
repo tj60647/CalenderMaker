@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS calendar_notes (
   color TEXT,
   time TEXT,
   duration INTEGER,
+  summary TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

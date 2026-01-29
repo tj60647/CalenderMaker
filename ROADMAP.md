@@ -60,6 +60,10 @@ Transform calendar creation from a manual, design-heavy process into a conversat
   - Demo credentials
   - Screenshots/GIF demo
   - License and attribution
+
+- [x] Create Educational Guide for Students (ARCHITECTURE_AND_DESIGN.md)
+  - Replace technical jargon with strategic design concepts
+  - Explain system flow using "Responsibility" not "Implementation"
   
 - [ ] Create CONTRIBUTING.md
   - Code style guide
@@ -71,11 +75,9 @@ Transform calendar creation from a manual, design-heavy process into a conversat
   - Document all required variables
   - Add setup instructions
   
-- [ ] Create deployment guide
+- [x] Create deployment guide (Integrated into Chat/README)
   - Vercel setup
   - Environment configuration
-  - Domain setup
-  - Monitoring setup
 
 **Success Metrics:**
 - New developer can set up project in <10 minutes
@@ -197,7 +199,7 @@ Transform calendar creation from a manual, design-heavy process into a conversat
 **Goal:** Live production deployment on Vercel
 
 **Tasks:**
-- [ ] Set up Vercel project
+- [x] Set up Vercel project
   - Connect GitHub repo
   - Configure build settings
   - Set environment variables
@@ -207,10 +209,9 @@ Transform calendar creation from a manual, design-heavy process into a conversat
   - SSL certificate
   - WWW redirect
   
-- [ ] Set up monitoring
+- [x] Set up monitoring (Vercel Core)
   - Vercel Analytics
-  - Error tracking (Sentry free tier)
-  - Uptime monitoring (UptimeRobot)
+  - Log access
   
 - [ ] Create demo account
   - Pre-populated calendar
@@ -228,7 +229,7 @@ Transform calendar creation from a manual, design-heavy process into a conversat
 ## Phase 2: Supabase Migration 🗄️
 
 **Timeline:** 2-3 weeks  
-**Status:** Planned  
+**Status:** Code Complete / Infra Pending
 **Priority:** High (required for multi-user scale)
 
 ### 2.1 Database Setup (Week 1)
@@ -236,38 +237,12 @@ Transform calendar creation from a manual, design-heavy process into a conversat
 **Goal:** Move from localStorage to Supabase PostgreSQL
 
 **Tasks:**
-- [ ] Create Supabase project
-  - Free tier (sufficient for MVP)
-  - Choose region (US East)
+- [x] Create Supabase project
   
 - [ ] Define database schema
-  ```sql
-  -- Already designed in types/index.ts
-  CREATE TABLE calendar_notes (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES auth.users,
-    date DATE NOT NULL,
-    notes TEXT NOT NULL,
-    category TEXT,
-    color TEXT,
-    time TEXT,
-    duration INTEGER,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-  );
-  
-  CREATE TABLE calendar_configs (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES auth.users,
-    title TEXT NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    color_scheme JSONB,
-    selected_model TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-  );
-  ```
+  - [x] Design Schema (types/index.ts)
+  - [x] Create Migration File (supabase/schema.sql)
+  - [ ] Execute SQL on Production ⚠️ **PENDING**
   
 - [ ] Set up Row Level Security (RLS)
   - Users can only see their own notes
@@ -289,19 +264,13 @@ Transform calendar creation from a manual, design-heavy process into a conversat
 **Goal:** Swap localStorage for Supabase (ONE line change!)
 
 **Tasks:**
-- [ ] Create SupabaseRepository class
+- [x] Create SupabaseRepository class (`lib/repositories/supabase.repository.ts`)
   - Implement INotesRepository interface
   - Use Supabase JS client
   - Handle errors gracefully
   
-- [ ] Update repository factory
-  ```typescript
-  // lib/repositories/index.ts
-  // OLD:
-  export const notesRepo = new LocalStorageRepository<CalendarNote>('notes');
-  // NEW:
-  export const notesRepo = new SupabaseRepository<CalendarNote>('calendar_notes');
-  ```
+- [x] Update repository factory
+  - Auto-switches based on `NEXT_PUBLIC_SUPABASE_URL`
   
 - [ ] Test CRUD operations
   - Create note
@@ -363,7 +332,20 @@ Transform calendar creation from a manual, design-heavy process into a conversat
 **Status:** Planned  
 **Priority:** High (improves usability)
 
-### 3.1 Color Customization UI (Week 1)
+### 3.1 Voice & Audio (Week 1)
+
+**Goal:** Enhance voice interaction capabilities
+
+**Tasks:**
+- [x] External TTS Integration Stubs (Code hooks ready)
+- [ ] Text-to-Speech (TTS) Service Integration
+  - [ ] OpenAI Audio API
+  - [ ] ElevenLabs API
+- [ ] Voice Personalization
+  - [ ] User voice cloning (future)
+  - [ ] Multiple AI personalities
+
+### 3.2 Color Customization UI (Week 2)
 
 **Goal:** Let users customize calendar colors visually
 

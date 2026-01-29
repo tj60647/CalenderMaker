@@ -116,7 +116,10 @@ export const supabase = {
   auth: {
     // Basic auth proxy
     getUser: () => getSupabaseClient().auth.getUser(),
+    getSession: () => getSupabaseClient().auth.getSession(),
+    updateUser: (attrs: any) => getSupabaseClient().auth.updateUser(attrs),
     signInWithPassword: (creds: any) => getSupabaseClient().auth.signInWithPassword(creds),
+    resetPasswordForEmail: (email: string, options?: any) => getSupabaseClient().auth.resetPasswordForEmail(email, options),
     signOut: () => getSupabaseClient().auth.signOut(),
     onAuthStateChange: (cb: any) => getSupabaseClient().auth.onAuthStateChange(cb),
   }

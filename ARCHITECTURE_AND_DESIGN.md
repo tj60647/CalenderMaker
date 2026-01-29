@@ -70,3 +70,47 @@ If you are using an AI coding assistant to explore this project, ask these quest
 4.  *"Why are the button components separate from the logic code?"*
 
 **Note:** Focus on the *flow* of information and the *responsibilities* of each part, rather than the specific lines of code.
+
+---
+
+## 🛠️ Development & Deployment Scenarios
+
+We follow a "Three-Stage Rocket" strategy to decouple development from infrastructure dependencies.
+
+### Scenario 1: No Supabase + Demo Mode (The "Starter" Kit)
+**Goal:** Zero-config, works immediately after `git clone`.
+
+*   **Setup:** No `.env.local` required (or missing keys).
+*   **Storage:** `LocalStorageRepository` (Browser memory).
+*   **Auth:** Demo Login (`demo` / `demo`).
+*   **Identity:** System uses a hardcoded "Demo User ID" (`0000...0001`).
+*   **Use Case:** Quick prototyping, UI development, teaching without cloud setup.
+
+### Scenario 2: Supabase + Demo Mode (The "Hybrid" Kit)
+**Goal:** Test database schema and real-time features without building auth UI.
+
+*   **Setup:** `.env.local` has `NEXT_PUBLIC_SUPABASE_URL` and `ANON_KEY`.
+*   **Storage:** `SupabaseRepository` (Real Cloud Database).
+*   **Auth:** Demo Login (`demo` / `demo`) - NextAuth still in simple mode.
+*   **Identity:** System uses "Demo User ID" but forces writes to the real DB.
+*   **Critical Requirement:** Must run `supabase/enable_demo_user.sql` to bypass Foreign Key constraints.
+*   **Use Case:** verifying database migrations, checking RLS policies, backend testing.
+
+### Scenario 3: Supabase + User Accounts (The "Production" Kit)
+**Goal:** Full robust application with real security.
+
+*   **Setup:** Full `.env.local` with Supabase keys + `NEXTAUTH_SECRET`.
+*   **Storage:** `SupabaseRepository`.
+*   **Auth:** Real Supabase Auth (Email/Password, Google, etc).
+*   **Identity:** Real UUIDs from Supabase `auth.users`.
+*   **Transition:**
+    1.  Revert `enable_demo_user.sql` (Restore strict constraints).
+    2.  Update `lib/auth/auth-options.ts` to use `SupabaseProvider`.
+*   **Use Case:** Production deployment, multi-user support.
+
+| Feature | Scenario 1 (Local) | Scenario 2 (Hybrid) | Scenario 3 (Prod) |
+| :--- | :--- | :--- | :--- |
+| **Database** | LocalStorage | Supabase | Supabase |
+| **Login** | Fake (`demo`) | Fake (`demo`) | Real (Email) |
+| **Logic** | `LocalStorageRepo` | `SupabaseRepo` | `SupabaseRepo` |
+| **Setup** | `npm run dev` | + `.env` keys | + Auth Provider Code |

@@ -13,6 +13,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -97,13 +98,13 @@ export default function SignInPage() {
           </Typography>
           
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-            Demo Mode - Any credentials will work
+            Sign in to your account
           </Typography>
 
           <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Username"
+              label="Email Address"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               margin="normal"
@@ -120,6 +121,14 @@ export default function SignInPage() {
               margin="normal"
               required
             />
+
+            <Box sx={{ display: 'flex', justifyContent: 'end', mt: 1 }}>
+              <Link href="/auth/forgot-password" passHref style={{ textDecoration: 'none' }}>
+                <Typography variant="body2" color="primary" sx={{ cursor: 'pointer' }}>
+                  Forgot Password?
+                </Typography>
+              </Link>
+            </Box>
 
             {error && (
               <Typography color="error" variant="body2" sx={{ mt: 2 }}>
@@ -138,8 +147,10 @@ export default function SignInPage() {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
 
-            <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
-              This is a demo. Try username: demo, password: demo
+            <Typography variant="caption" display="block" color="text.secondary" align="center" sx={{ mt: 2 }}>
+              Using the Production Database? Enter your real email/password.
+              <br/>
+              Local Dev/Demo? Use: demo / demo
             </Typography>
           </Box>
         </Paper>

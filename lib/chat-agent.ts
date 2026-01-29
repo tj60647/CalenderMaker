@@ -112,6 +112,7 @@ interface RunAgentParams {
   toolExecutor: (name: string, args: Record<string, unknown>) => Promise<string>;
   requestId?: string;
   maxLoops?: number;
+  onProgress?: (status: string) => void;
 }
 
 interface AgentResponse {
@@ -130,7 +131,8 @@ export async function runAgent({
   systemPrompt,
   toolExecutor,
   requestId = 'unknown',
-  maxLoops = 5
+  maxLoops = 5,
+  onProgress
 }: RunAgentParams): Promise<AgentResponse> {
   
   const currentMessages = [
@@ -144,6 +146,10 @@ export async function runAgent({
   while (loopCount < maxLoops) {
     loopCount++;
     console.log(`[${requestId}] Loop ${loopCount}/${maxLoops}`);
+    
+    if (loopCount > 1 && onProgress) {
+        onProgress(`Thinking (Step ${loopCount})...`);
+    }
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -193,6 +199,17 @@ export async function runAgent({
             }
 
             console.log(`[${requestId}] Executing tool: ${toolName}`);
+            
+            if (onProgress) {
+                // Determine a user-friendly status message based on the tool
+                let statusMsg = `Using tool: ${toolName}...`;
+                if (toolName === 'search_calendar') statusMsg = 'Checking your calendar...';
+                if (toolName === 'get_week_notes') statusMsg = 'Reading this week\'s schedule...';
+                if (toolName === 'search_by_keyword') statusMsg = 'Searching specific events...';
+                
+                onProgress(statusMsg);
+            }
+
             const result = await toolExecutor(toolName, args);
 
             allToolCalls.push({ name: toolName, args, result: JSON.parse(result) });

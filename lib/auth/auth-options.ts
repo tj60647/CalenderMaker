@@ -16,6 +16,7 @@
 
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { isSupabaseConfigured, getSupabaseClient } from '@/lib/supabase/client';
 
 /**
  * Demo user ID for localStorage phase
@@ -49,30 +50,65 @@ export const authOptions: NextAuthOptions = {
    */
   providers: [
     CredentialsProvider({
-      name: 'Demo Login',
+      name: 'Supabase Login',
       credentials: {
-        username: { label: 'Username', type: 'text', placeholder: 'demo' },
+        username: { label: 'Email', type: 'text', placeholder: 'demo' },
         password: { label: 'Password', type: 'password' }
       },
       /**
        * Validate credentials and return user object
        * 
-       * Current: Always succeeds, returns demo user
-       * Future: Call Supabase auth.signIn(), return real user
+       * Supports both "Demo Mode" and Real Supabase Auth.
        * 
-       * @param credentials - Username and password from form
+       * @param credentials - Username/Email and password
        * @returns User object if valid, null otherwise
        */
       async authorize(credentials) {
-        // FOR DEMO: Accept any credentials
-        // In production, this would verify against database
-        if (credentials?.username) {
+        const username = credentials?.username;
+        const password = credentials?.password;
+
+        // 1. DEMO MODE BACKDOOR
+        // Always allow 'demo'/'demo' regardless of backend
+        // This is crucial for Scenario 1 (Local) and Scenario 2 (Hybrid)
+        if (username === 'demo' && password === 'demo') {
           return {
             id: DEMO_USER_ID,
-            name: credentials.username,
-            email: `${credentials.username}@demo.local`
+            name: 'Demo User',
+            email: 'demo@example.com'
           };
         }
+
+        // 2. SUPABASE AUTH (REAL USERS)
+        // If Supabase is configured, try to authenticate against real database
+        if (isSupabaseConfigured() && username && password) {
+          try {
+            const supabase = getSupabaseClient();
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: username,
+              password: password
+            });
+
+            if (data?.user && !error) {
+              return {
+                id: data.user.id,
+                name: data.user.user_metadata?.full_name || username.split('@')[0],
+                email: data.user.email
+              };
+            }
+          } catch (error) {
+            console.error('Supabase auth failed:', error);
+            // Fall through to return null
+          }
+        }
+
+        // 3. LEGACY/DEV FALLBACK
+        // If Supabase is NOT configured, and it's not the specific 'demo' user,
+        // we might still want to allow access in development (Scenario 1 loose mode).
+        // But for security, let's strictly require 'demo'/'demo' unless configured otherwise.
+        if (!isSupabaseConfigured()) {
+            console.warn('Login failed: Use username="demo" and password="demo" for local development.');
+        }
+
         return null;
       }
     })
@@ -150,6 +186,14 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth/signin',  // Custom sign-in page (we'll create this)
   },
+
+  /**
+   * Secret for signing tokens
+   * 
+   * In production, this MUST be set in environment variables.
+   * In development, we fallback to a hardcoded string so the app works immediately.
+   */
+  secret: process.env.NEXTAUTH_SECRET || 'development-fallback-secret',
 
   /**
    * Debugging (remove in production)
