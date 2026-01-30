@@ -37,8 +37,13 @@ export default function ForgotPasswordPage() {
     setMessage(null);
 
     try {
+      // Determine the redirect URL (Production vs Local)
+      // If NEXT_PUBLIC_APP_URL is set, use it. Otherwise fallback to window.location.origin
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const redirectUrl = `${baseUrl}/auth/reset-password`;
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: redirectUrl,
       });
 
       if (error) throw error;
