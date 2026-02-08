@@ -19,12 +19,12 @@ export const size = {
   height: 256,
 };
 
-export const contentType = 'image/svg+xml';
+export const contentType = 'image/png';
 
 /**
  * Generate icon
  * 
- * Returns the SVG icon for use as favicon, PWA icon, etc.
+ * Returns the generated icon for use as favicon, PWA icon, etc.
  * This is the same design as icon.svg but generated dynamically.
  */
 export default function Icon() {
