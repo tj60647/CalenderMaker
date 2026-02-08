@@ -1,0 +1,117 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="header-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6">
+        <animate attributeName="stop-color" values="#3b82f6;#6366f1;#3b82f6" dur="4s" repeatCount="indefinite" />
+      </stop>
+      <stop offset="100%" style="stop-color:#8b5cf6">
+        <animate attributeName="stop-color" values="#8b5cf6;#a855f7;#8b5cf6" dur="4s" repeatCount="indefinite" />
+      </stop>
+    </linearGradient>
+  </defs>
+  
+  <rect width="256" height="256" rx="48" fill="#e0e7ff"/>
+  
+  <g filter="url(#soft-shadow)">
+    <rect x="28" y="68" width="200" height="148" rx="12" fill="white"/>
+    
+    <!-- Weekend Columns -->
+    <rect x="28" y="104" width="28" height="112" fill="#f3f4f6" opacity="0.7"/>
+    <rect x="200" y="104" width="28" height="112" fill="#f3f4f6" opacity="0.7"/>
+    
+    <path d="M 28 80 Q 28 68 40 68 L 216 68 Q 228 68 228 80 L 228 104 L 28 104 Z" fill="url(#header-grad)"/>
+    <rect x="28" y="92" width="200" height="20" fill="url(#header-grad)"/>
+
+    <!-- Day Cells (7-column layout) -->
+    <g>
+      <!-- Row 1: y=120 -->
+      <rect x="36" y="120" width="20" height="20" rx="4" fill="#e5e5e5"/>
+      <rect x="64" y="120" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      <rect x="92" y="120" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      
+      <!-- Yellow Pulsing Cell (x=120) -->
+      <g>
+        <rect x="120" y="120" width="20" height="20" rx="4" fill="#fbbf24">
+           <animate attributeName="fill" values="#fbbf24;#f59e0b;#fbbf24" dur="2s" repeatCount="indefinite"/>
+        </rect>
+        <circle cx="130" cy="130" r="5" fill="white">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="3s" repeatCount="indefinite" begin="0s"/>
+          <animate attributeName="r" values="3;6;3" dur="3s" repeatCount="indefinite" begin="0s"/>
+        </circle>
+      </g>
+      
+      <rect x="148" y="120" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      <rect x="176" y="120" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      <rect x="204" y="120" width="20" height="20" rx="4" fill="#e5e5e5"/>
+      
+
+      <!-- Row 2: y=148 -->
+      <rect x="36" y="148" width="20" height="20" rx="4" fill="#e5e5e5"/>
+      <rect x="64" y="148" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      
+      <!-- Purple Bouncing Cell (x=92) -->
+      <g>
+        <rect x="92" y="148" width="20" height="20" rx="4" fill="#a78bfa">
+           <animate attributeName="fill" values="#a78bfa;#8b5cf6;#a78bfa" dur="2.5s" repeatCount="indefinite"/>
+        </rect>
+        <circle cx="102" cy="158" r="4" fill="white">
+          <animate attributeName="cy" values="162;154;162" dur="1s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+      
+      <rect x="120" y="148" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      <rect x="148" y="148" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      
+      <!-- Green Checkmark Cell (x=176) -->
+      <g>
+        <rect x="176" y="148" width="20" height="20" rx="4" fill="#10b981"/>
+        <path d="M180 158 l4 4 l8 -8" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+           <animate attributeName="stroke-dasharray" values="0,20;20,0" dur="2.5s" repeatCount="indefinite"/>
+        </path>
+      </g>
+      
+      <rect x="204" y="148" width="20" height="20" rx="4" fill="#e5e5e5"/>
+
+
+      <!-- Row 3: y=176 -->
+      <rect x="36" y="176" width="20" height="20" rx="4" fill="#e5e5e5"/>
+      <rect x="64" y="176" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      <rect x="92" y="176" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      
+      <!-- Pink Rotating Cell (x=120) -->
+      <g>
+        <rect x="120" y="176" width="20" height="20" rx="4" fill="#ec4899">
+           <animate attributeName="fill" values="#ec4899;#db2777;#ec4899" dur="1.8s" repeatCount="indefinite"/>
+        </rect>
+        <rect x="124" y="180" width="12" height="12" rx="3" fill="white">
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" repeatCount="indefinite"/>
+          <animate attributeName="transform" attributeType="XML" type="rotate" from="0 130 186" to="360 130 186" dur="5s" repeatCount="indefinite"/>
+        </rect>
+      </g>
+      
+      <rect x="148" y="176" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      <rect x="176" y="176" width="20" height="20" rx="4" fill="#bfdbfe"/>
+      <rect x="204" y="176" width="20" height="20" rx="4" fill="#e5e5e5"/>
+    </g>
+  </g>
+  
+  <g transform="translate(24, 20)">
+    <rect width="80" height="36" rx="18" fill="#3b82f6"/>
+    <path d="M12 36 L24 36 L18 44 Z" fill="#3b82f6"/>
+    <circle cx="24" cy="18" r="4" fill="white">
+      <animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite" begin="0s"/>
+    </circle>
+    <circle cx="40" cy="18" r="4" fill="white">
+      <animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite" begin="0.2s"/>
+    </circle>
+    <circle cx="56" cy="18" r="4" fill="white">
+      <animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite" begin="0.4s"/>
+    </circle>
+  </g>
+
+  <!-- Response Bubble (moved below calendar) -->
+  <g transform="translate(143, 224)" opacity="0.95">
+    <rect width="80" height="28" rx="14" fill="#10b981"/>
+    <path d="M 20 14 L 28 22 L 44 6" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
